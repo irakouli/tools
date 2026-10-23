@@ -254,6 +254,9 @@ class DelimiterRun implements Delimiter {
 
   final List<DelimiterTag> tags;
 
+  /// The length of this run before any delimiters were matched and removed.
+  final int originalLength;
+
   DelimiterRun._({
     required this.node,
     required this.char,
@@ -270,6 +273,7 @@ class DelimiterRun implements Delimiter {
        canClose =
            isRightFlanking &&
            (!isLeftFlanking || allowIntraWord || isFollowedByPunctuation),
+       originalLength = node.text.length,
        isActive = true;
 
   /// Tries to parse a delimiter run from [runStart] (inclusive) to [runEnd]

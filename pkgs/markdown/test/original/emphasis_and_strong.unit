@@ -81,3 +81,28 @@ a_b_ a__b__ a*b* a**b**
 _a_b c_d_ __a__b c__d__ *a*b c*d* **a**b c**d**
 <<<
 <p><em>a_b c_d</em> <strong>a__b c__d</strong> <em>a</em>b c<em>d</em> <strong>a</strong>b c<strong>d</strong></p>
+>>> delimiter run partly consumed keeps its original length (rule of 3)
+"b****a***
+
+<<<
+<p>&quot;b*<em><strong>a</strong></em></p>
+>>> opener after a both-flanking run of three
+_***"****
+
+<<<
+<p>_<em><strong>&quot;</strong></em>*</p>
+>>> openers bottom survives delimiters removed by an earlier match
+**a*b*** *@*
+
+<<<
+<p><strong>a<em>b</em></strong> <em>@</em></p>
+>>> closer that can also open uses its own openers bottom
+_@**)b_*b b**)
+
+<<<
+<p><em>@**)b</em><em>b b</em>*)</p>
+>>> nested emphasis across underscore runs
+***b__*(*@__**
+
+<<<
+<p><em><em><em>b__</em>(</em>@__</em>*</p>

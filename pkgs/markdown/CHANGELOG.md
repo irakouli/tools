@@ -1,5 +1,11 @@
 ## 7.4.1-wip
 
+* Fix emphasis delimiter matching to follow the CommonMark "process
+  emphasis" algorithm: track openers-bottom by delimiter rather than by a
+  stack index that goes stale when matches remove delimiters, key it on
+  whether the closer can also open, and apply the "multiple of 3" rule to
+  the original delimiter run lengths. Previously some inputs such as
+  `**a*b*** *@*` lost or mis-nested emphasis.
 * Skip the regular expression in `EmojiSyntax`, `AutolinkSyntax`,
   `CodeSyntax`, and `ColorSwatchSyntax` when the character at the current
   position cannot start a match. This makes inline parsing faster, mostly on

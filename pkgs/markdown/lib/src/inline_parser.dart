@@ -192,11 +192,23 @@ class InlineParser {
   }
 
   /// Rules 9 and 10.
+  /// The length of [d]'s delimiter run before any of it was matched, which
+  /// is what the "multiple of 3" rule is defined on.
+  static int _originalLength(Delimiter d) =>
+      d is DelimiterRun ? d.originalLength : d.length;
+
+  /// The openers-bottom slot for [closer]: per CommonMark, keyed by the
+  /// closer's original length modulo 3 and whether it can also open.
+  static int _openersBottomSlot(Delimiter closer) =>
+      _originalLength(closer) % 3 + (closer.canOpen ? 3 : 0);
+
   bool _canFormEmphasis(Delimiter opener, Delimiter closer) {
     if ((opener.canOpen && opener.canClose) ||
         (closer.canOpen && closer.canClose)) {
-      return (opener.length + closer.length) % 3 != 0 ||
-          (opener.length % 3 == 0 && closer.length % 3 == 0);
+      final openerLength = _originalLength(opener);
+      final closerLength = _originalLength(closer);
+      return (openerLength + closerLength) % 3 != 0 ||
+          (openerLength % 3 == 0 && closerLength % 3 == 0);
     } else {
       return true;
     }
@@ -213,16 +225,20 @@ class InlineParser {
     // Each key in this map is an open delimiter character. Each value is a
     // 3-element list. Each value in the list is the lowest index for the given
     // delimiter length modulo 3 (0, 1, 2).
-    final openersBottom = <int, List<int>>{};
+    final openersBottom = <int, List<Delimiter?>>{};
     while (currentIndex < _delimiterStack.length) {
       final closer = _delimiterStack[currentIndex];
       if (!closer.canClose || closer is! DelimiterRun) {
         currentIndex++;
         continue;
       }
-      openersBottom.putIfAbsent(closer.char, () => List.filled(3, bottomIndex));
+      openersBottom.putIfAbsent(closer.char, () => List.filled(6, null));
       final openersBottomPerCloserLength = openersBottom[closer.char]!;
-      final openerBottom = openersBottomPerCloserLength[closer.length % 3];
+      final bottomSlot = _openersBottomSlot(closer);
+      final bottomMarker = openersBottomPerCloserLength[bottomSlot];
+      final openerBottom = bottomMarker == null
+          ? bottomIndex
+          : _delimiterStack.indexOf(bottomMarker);
       final openerIndex = _delimiterStack.lastIndexWhere(
         (d) =>
             d.char == closer.char && d.canOpen && _canFormEmphasis(d, closer),
@@ -303,7 +319,10 @@ class InlineParser {
         }
       } else {
         // No opener is found.
-        openersBottomPerCloserLength[closer.length % 3] = currentIndex - 1;
+        openersBottomPerCloserLength[bottomSlot] =
+            currentIndex - 1 > bottomIndex
+            ? _delimiterStack[currentIndex - 1]
+            : null;
         if (!closer.canOpen) {
           _delimiterStack.removeAt(currentIndex);
           // This advances [currentIndex] to the next delimiter.
